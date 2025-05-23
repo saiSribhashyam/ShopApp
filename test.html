@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optical Shop API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+        h2 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .endpoint-section { background-color: #fff; padding: 15px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], input[type="password"], input[type="number"], textarea {
+            width: calc(100% - 22px); padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;
+        }
+        button {
+            background-color: #007bff; color: white; padding: 10px 15px; border: none;
+            border-radius: 4px; cursor: pointer; margin-top: 10px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+        .flex-container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .flex-item { flex: 1; min-width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Optical Shop API Test Interface</h1>
+
+    <div class="flex-container">
+        <div class="flex-item endpoint-section">
+            <h2>Global Settings</h2>
+            <label for="apiBaseUrl">API Base URL:</label>
+            <input type="text" id="apiBaseUrl" value="http://localhost:5001/api">
+            <label for="authToken">Auth Token (JWT):</label>
+            <input type="text" id="authToken" placeholder="Enter JWT token after login">
+        </div>
+    </div>
+
+    <div class="flex-container">
+        <!-- Authentication Section -->
+        <div class="flex-item endpoint-section">
+            <h2>Authentication</h2>
+            <div>
+                <h3>Setup Owner (POST /auth/setup-owner)</h3>
+                <label for="setupUsername">Username:</label>
+                <input type="text" id="setupUsername" value="shopowner">
+                <label for="setupPin">PIN (min 4 chars):</label>
+                <input type="password" id="setupPin" value="1234">
+                <label for="setupName">Name:</label>
+                <input type="text" id="setupName" value="Main Owner">
+                <button onclick="setupOwner()">Setup Owner</button>
+                <pre id="setupOwnerResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Login Owner (POST /auth/login)</h3>
+                <label for="loginUsername">Username:</label>
+                <input type="text" id="loginUsername" value="shopowner">
+                <label for="loginPin">PIN:</label>
+                <input type="password" id="loginPin" value="1234">
+                <button onclick="loginOwner()">Login</button>
+                <pre id="loginOwnerResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Profile (GET /auth/profile)</h3>
+                <button onclick="getProfile()">Get Profile</button>
+                <pre id="getProfileResponse"></pre>
+            </div>
+        </div>
+
+        <!-- User Management Section -->
+        <div class="flex-item endpoint-section">
+            <h2>User Management (/users)</h2>
+            <div>
+                <h3>Create User (POST /users)</h3>
+                <label for="userName">Name:</label>
+                <input type="text" id="userName" value="John Doe">
+                <label for="userPhno">Phone Number:</label>
+                <input type="text" id="userPhno" value="1234567890">
+                <label for="userAge">Age (Optional):</label>
+                <input type="number" id="userAge" value="30">
+                <label for="userCustomerType">Customer Type (Optional, e.g., WalkIn):</label>
+                <input type="text" id="userCustomerType" value="WalkIn">
+                <button onclick="createUser()">Create User</button>
+                <pre id="createUserResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Users (GET /users)</h3>
+                <label for="getUsersPhno">Search by Phone (Optional):</label>
+                <input type="text" id="getUsersPhno">
+                <button onclick="getUsers()">Get Users</button>
+                <pre id="getUsersResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get User by ID (GET /users/:id)</h3>
+                <label for="getUserId">User ID:</label>
+                <input type="text" id="getUserId" placeholder="Enter User ID">
+                <button onclick="getUserById()">Get User by ID</button>
+                <pre id="getUserByIdResponse"></pre>
+            </div>
+            <!-- Add Update and Delete User forms here if needed -->
+        </div>
+    </div>
+
+    <div class="flex-container">
+        <!-- Product Management Section -->
+        <div class="flex-item endpoint-section">
+            <h2>Product Management (/products)</h2>
+            <div>
+                <h3>Create Product (POST /products)</h3>
+                <label for="productName">Product Name:</label>
+                <input type="text" id="productName" value="Test Frame">
+                <label for="productType">Type (Frame, Lens, etc.):</label>
+                <input type="text" id="productType" value="Frame">
+                <label for="costPrice">Cost Price:</label>
+                <input type="number" id="costPrice" value="500">
+                <label for="sellingPrice">Selling Price:</label>
+                <input type="number" id="sellingPrice" value="1000">
+                <label for="stockQuantity">Stock Quantity:</label>
+                <input type="number" id="stockQuantity" value="10">
+                <button onclick="createProduct()">Create Product</button>
+                <pre id="createProductResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Products (GET /products)</h3>
+                 <label for="getProductsKeyword">Search by Keyword (Optional):</label>
+                <input type="text" id="getProductsKeyword">
+                <label for="getProductsType">Filter by Type (Optional):</label>
+                <input type="text" id="getProductsType">
+                <button onclick="getProducts()">Get Products</button>
+                <pre id="getProductsResponse"></pre>
+            </div>
+            <!-- Add Get Product by ID, Update, Delete, Update Stock forms here -->
+        </div>
+
+        <!-- Order Management Section -->
+        <div class="flex-item endpoint-section">
+            <h2>Order Management (/orders)</h2>
+            <div>
+                <h3>Create Order (POST /orders) - Simplified</h3>
+                <p><strong>Note:</strong> For simplicity, this form assumes you have valid User and Product IDs.</p>
+                <label for="orderUserId">User ID:</label>
+                <input type="text" id="orderUserId" placeholder="Valid User ID from created user">
+                <label for="orderProductId">Product ID (for first item):</label>
+                <input type="text" id="orderProductId" placeholder="Valid Product ID from created product">
+                <label for="orderQuantity">Quantity (for first item):</label>
+                <input type="number" id="orderQuantity" value="1">
+                <label for="orderType">Order Type (e.g., FrameOnly):</label>
+                <input type="text" id="orderType" value="FrameOnly">
+                <button onclick="createOrder()">Create Order</button>
+                <pre id="createOrderResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Orders (GET /orders)</h3>
+                <button onclick="getOrders()">Get Orders</button>
+                <pre id="getOrdersResponse"></pre>
+            </div>
+            <!-- Add Get Order by ID, Update Order forms here -->
+        </div>
+    </div>
+
+    <!-- Placeholder for Prescription and Service/Repair sections -->
+    <div class="flex-container">
+        <div class="flex-item endpoint-section">
+            <h2>Prescription Management (/prescriptions)</h2>
+            <p>Add forms for Create, Get, Get by ID, Update, Delete Prescriptions here.</p>
+            <p>Remember to handle `userId` (optional) and various prescription fields.</p>
+        </div>
+        <div class="flex-item endpoint-section">
+            <h2>Service/Repair Management (/services)</h2>
+            <p>Add forms for Create, Get, Get by ID, Update, Delete Service/Repairs here.</p>
+            <p>Remember to handle `userId` and service/repair specific fields.</p>
+        </div>
+    </div>
+
+
+    <script>
+        const getBaseUrl = () => document.getElementById('apiBaseUrl').value;
+        const getAuthToken = () => document.getElementById('authToken').value;
+
+        async function makeRequest(endpoint, method = 'GET', body = null, requiresAuth = true) {
+            const url = `${getBaseUrl()}${endpoint}`;
+            const headers = { 'Content-Type': 'application/json' };
+            if (requiresAuth) {
+                const token = getAuthToken();
+                if (!token && method !== 'GET' && endpoint.indexOf('/auth/login') === -1 && endpoint.indexOf('/auth/setup-owner') === -1 ) {
+                    // Allow login and setup without token
+                     alert('Auth token is required for this request.');
+                     return { error: 'Auth token required' };
+                }
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                if (!response.ok) {
+                    console.error('API Error:', data);
+                    return { status: response.status, error: data.message || 'Error', details: data };
+                }
+                return data;
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                return { error: error.message };
+            }
+        }
+
+        // --- Auth Functions ---
+        async function setupOwner() {
+            const username = document.getElementById('setupUsername').value;
+            const pin = document.getElementById('setupPin').value;
+            const name = document.getElementById('setupName').value;
+            const response = await makeRequest('/auth/setup-owner', 'POST', { username, pin, name }, false);
+            document.getElementById('setupOwnerResponse').textContent = JSON.stringify(response, null, 2);
+            if (response && response.token) {
+                document.getElementById('authToken').value = response.token;
+            }
+        }
+
+        async function loginOwner() {
+            const username = document.getElementById('loginUsername').value;
+            const pin = document.getElementById('loginPin').value;
+            const response = await makeRequest('/auth/login', 'POST', { username, pin }, false);
+            document.getElementById('loginOwnerResponse').textContent = JSON.stringify(response, null, 2);
+            if (response && response.token) {
+                document.getElementById('authToken').value = response.token;
+            }
+        }
+
+        async function getProfile() {
+            const response = await makeRequest('/auth/profile', 'GET');
+            document.getElementById('getProfileResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- User Functions ---
+        async function createUser() {
+            const name = document.getElementById('userName').value;
+            const phno = document.getElementById('userPhno').value;
+            const age = document.getElementById('userAge').value ? parseInt(document.getElementById('userAge').value) : undefined;
+            const customerType = document.getElementById('userCustomerType').value;
+            const response = await makeRequest('/users', 'POST', { name, phno, age, customerType });
+            document.getElementById('createUserResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getUsers() {
+            let endpoint = '/users';
+            const phno = document.getElementById('getUsersPhno').value;
+            if (phno) {
+                endpoint += `?phno=${encodeURIComponent(phno)}`;
+            }
+            const response = await makeRequest(endpoint, 'GET');
+            document.getElementById('getUsersResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getUserById() {
+            const userId = document.getElementById('getUserId').value;
+            if (!userId) { alert('Please enter a User ID.'); return; }
+            const response = await makeRequest(`/users/${userId}`, 'GET');
+            document.getElementById('getUserByIdResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Product Functions ---
+        async function createProduct() {
+            const productName = document.getElementById('productName').value;
+            const productType = document.getElementById('productType').value;
+            const costPrice = parseFloat(document.getElementById('costPrice').value);
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+            const stockQuantity = parseInt(document.getElementById('stockQuantity').value);
+            const body = { productName, productType, costPrice, sellingPrice, stockQuantity };
+            const response = await makeRequest('/products', 'POST', body);
+            document.getElementById('createProductResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getProducts() {
+            let endpoint = '/products?page=1&pageSize=10'; // Example with pagination
+            const keyword = document.getElementById('getProductsKeyword').value;
+            const type = document.getElementById('getProductsType').value;
+            if (keyword) endpoint += `&keyword=${encodeURIComponent(keyword)}`;
+            if (type) endpoint += `&productType=${encodeURIComponent(type)}`;
+
+            const response = await makeRequest(endpoint, 'GET');
+            document.getElementById('getProductsResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Order Functions (Simplified) ---
+        async function createOrder() {
+            const userId = document.getElementById('orderUserId').value;
+            const productId = document.getElementById('orderProductId').value;
+            const quantity = parseInt(document.getElementById('orderQuantity').value);
+            const orderType = document.getElementById('orderType').value;
+
+            if (!userId || !productId || !quantity || !orderType) {
+                alert('User ID, Product ID, Quantity, and Order Type are required for this simplified test.');
+                return;
+            }
+
+            const body = {
+                userId,
+                orderItems: [{ productId, quantity }], // Assuming unitPrice will be fetched by backend
+                orderType
+            };
+            const response = await makeRequest('/orders', 'POST', body);
+            document.getElementById('createOrderResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getOrders() {
+            const response = await makeRequest('/orders?page=1&pageSize=10', 'GET'); // Example with pagination
+            document.getElementById('getOrdersResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Helper to load token from localStorage (optional) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedToken = localStorage.getItem('authToken');
+            if (savedToken) {
+                document.getElementById('authToken').value = savedToken;
+            }
+        });
+
+        // --- Helper to save token to localStorage (optional) ---
+        document.getElementById('authToken').addEventListener('input', (event) => {
+            localStorage.setItem('authToken', event.target.value);
+        });
+
+    </script>
+</body>
+</html>
