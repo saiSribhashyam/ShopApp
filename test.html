@@ -163,15 +163,111 @@
 
     <!-- Placeholder for Prescription and Service/Repair sections -->
     <div class="flex-container">
-        <div class="flex-item endpoint-section">
+        <div class="flex-item endpoint-section" id="prescriptionSection">
             <h2>Prescription Management (/prescriptions)</h2>
-            <p>Add forms for Create, Get, Get by ID, Update, Delete Prescriptions here.</p>
-            <p>Remember to handle `userId` (optional) and various prescription fields.</p>
+            <div>
+                <h3>Create Prescription (POST /prescriptions)</h3>
+                <label for="prescUserId">User ID (Optional, if linking to existing user):</label>
+                <input type="text" id="prescUserId" placeholder="User ID">
+                <label for="prescPatientName">Patient Name:</label>
+                <input type="text" id="prescPatientName" value="Walk-in Patient">
+                <label for="prescDate">Prescription Date (YYYY-MM-DD):</label>
+                <input type="text" id="prescDate" value="2023-10-26">
+                <label for="prescDvRightSph">DV Right SPH (Example field):</label>
+                <input type="number" id="prescDvRightSph" value="-1.25">
+                <label for="prescNotes">Notes (Optional):</label>
+                <textarea id="prescNotes" rows="2"></textarea>
+                <button onclick="createPrescription()">Create Prescription</button>
+                <pre id="createPrescriptionResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Prescriptions (GET /prescriptions)</h3>
+                <label for="getPrescUserIdFilter">Filter by User ID (Optional):</label>
+                <input type="text" id="getPrescUserIdFilter" placeholder="User ID">
+                <button onclick="getPrescriptions()">Get Prescriptions</button>
+                <pre id="getPrescriptionsResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Prescription by ID (GET /prescriptions/:id)</h3>
+                <label for="getPrescriptionId">Prescription ID:</label>
+                <input type="text" id="getPrescriptionId" placeholder="Enter Prescription ID">
+                <button onclick="getPrescriptionById()">Get Prescription by ID</button>
+                <pre id="getPrescriptionByIdResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Update Prescription (PUT /prescriptions/:id)</h3>
+                <label for="updatePrescId">Prescription ID to Update:</label>
+                <input type="text" id="updatePrescId" placeholder="Prescription ID">
+                <label for="updatePrescNotes">New Notes (Example update field):</label>
+                <textarea id="updatePrescNotes" rows="2"></textarea>
+                <button onclick="updatePrescription()">Update Prescription</button>
+                <pre id="updatePrescriptionResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Delete Prescription (DELETE /prescriptions/:id)</h3>
+                <label for="deletePrescriptionId">Prescription ID to Delete:</label>
+                <input type="text" id="deletePrescriptionId" placeholder="Prescription ID">
+                <button onclick="deletePrescription()">Delete Prescription</button>
+                <pre id="deletePrescriptionResponse"></pre>
+            </div>
         </div>
-        <div class="flex-item endpoint-section">
+        <div class="flex-item endpoint-section" id="serviceRepairSection">
             <h2>Service/Repair Management (/services)</h2>
-            <p>Add forms for Create, Get, Get by ID, Update, Delete Service/Repairs here.</p>
-            <p>Remember to handle `userId` and service/repair specific fields.</p>
+            <div>
+                <h3>Create Service/Repair (POST /services)</h3>
+                <label for="srUserId">User ID:</label>
+                <input type="text" id="srUserId" placeholder="User ID of customer">
+                <label for="srItemDesc">Item Description:</label>
+                <input type="text" id="srItemDesc" value="Sunglasses">
+                <label for="srIssueDesc">Issue Description:</label>
+                <textarea id="srIssueDesc" rows="2">Broken hinge</textarea>
+                <label for="srEstimatedCost">Estimated Cost (Optional):</label>
+                <input type="number" id="srEstimatedCost" value="20">
+                <button onclick="createServiceRepair()">Create Service/Repair</button>
+                <pre id="createServiceRepairResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Service/Repairs (GET /services)</h3>
+                <label for="getSrUserIdFilter">Filter by User ID (Optional):</label>
+                <input type="text" id="getSrUserIdFilter" placeholder="User ID">
+                <label for="getSrStatusFilter">Filter by Status (Optional, e.g., Received, UnderRepair):</label>
+                <input type="text" id="getSrStatusFilter" placeholder="Service Status">
+                <button onclick="getServiceRepairs()">Get Service/Repairs</button>
+                <pre id="getServiceRepairsResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Service/Repair by ID (GET /services/:id)</h3>
+                <label for="getServiceRepairId">Service/Repair ID:</label>
+                <input type="text" id="getServiceRepairId" placeholder="Enter Service/Repair ID">
+                <button onclick="getServiceRepairById()">Get Service/Repair by ID</button>
+                <pre id="getServiceRepairByIdResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Update Service/Repair (PUT /services/:id)</h3>
+                <label for="updateSrId">Service/Repair ID to Update:</label>
+                <input type="text" id="updateSrId" placeholder="Service/Repair ID">
+                <label for="updateSrStatus">New Status (e.g., RepairComplete):</label>
+                <input type="text" id="updateSrStatus" value="RepairComplete">
+                <label for="updateSrActualCost">Actual Cost (Optional):</label>
+                <input type="number" id="updateSrActualCost" value="25">
+                <button onclick="updateServiceRepair()">Update Service/Repair</button>
+                <pre id="updateServiceRepairResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Delete Service/Repair (DELETE /services/:id)</h3>
+                <label for="deleteServiceRepairId">Service/Repair ID to Delete:</label>
+                <input type="text" id="deleteServiceRepairId" placeholder="Service/Repair ID">
+                <button onclick="deleteServiceRepair()">Delete Service/Repair</button>
+                <pre id="deleteServiceRepairResponse"></pre>
+            </div>
         </div>
     </div>
 
@@ -310,6 +406,117 @@
         async function getOrders() {
             const response = await makeRequest('/orders?page=1&pageSize=10', 'GET');
             document.getElementById('getOrdersResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Prescription Functions ---
+        async function createPrescription() {
+            const userId = document.getElementById('prescUserId').value || undefined; // Optional
+            const patientName = document.getElementById('prescPatientName').value;
+            const prescriptionDate = document.getElementById('prescDate').value;
+            const dvRightSph = parseFloat(document.getElementById('prescDvRightSph').value); // Example field
+            const notes = document.getElementById('prescNotes').value;
+
+            if (!patientName || !prescriptionDate) {
+                alert('Patient Name and Prescription Date are required.');
+                return;
+            }
+            const body = { userId, patientName, prescriptionDate, dvRightSph, notes };
+            const response = await makeRequest('/prescriptions', 'POST', body);
+            document.getElementById('createPrescriptionResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getPrescriptions() {
+            let endpoint = '/prescriptions';
+            const userIdFilter = document.getElementById('getPrescUserIdFilter').value;
+            if (userIdFilter) {
+                endpoint += `?userId=${encodeURIComponent(userIdFilter)}`;
+            }
+            const response = await makeRequest(endpoint, 'GET');
+            document.getElementById('getPrescriptionsResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getPrescriptionById() {
+            const prescriptionId = document.getElementById('getPrescriptionId').value;
+            if (!prescriptionId) { alert('Please enter a Prescription ID.'); return; }
+            const response = await makeRequest(`/prescriptions/${prescriptionId}`, 'GET');
+            document.getElementById('getPrescriptionByIdResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function updatePrescription() {
+            const prescriptionId = document.getElementById('updatePrescId').value;
+            const notes = document.getElementById('updatePrescNotes').value; // Example: only updating notes
+
+            if (!prescriptionId) { alert('Please enter a Prescription ID to update.'); return; }
+            if (notes === '') { alert('Please enter new notes for the update (example).'); return;}
+
+            const body = { notes }; // Add other fields as needed for a more complete update form
+            const response = await makeRequest(`/prescriptions/${prescriptionId}`, 'PUT', body);
+            document.getElementById('updatePrescriptionResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function deletePrescription() {
+            const prescriptionId = document.getElementById('deletePrescriptionId').value;
+            if (!prescriptionId) { alert('Please enter a Prescription ID to delete.'); return; }
+            const response = await makeRequest(`/prescriptions/${prescriptionId}`, 'DELETE');
+            document.getElementById('deletePrescriptionResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Service/Repair Functions ---
+        async function createServiceRepair() {
+            const userId = document.getElementById('srUserId').value;
+            const itemDescription = document.getElementById('srItemDesc').value;
+            const issueDescription = document.getElementById('srIssueDesc').value;
+            const estimatedCost = document.getElementById('srEstimatedCost').value ? parseFloat(document.getElementById('srEstimatedCost').value) : undefined;
+
+            if (!userId || !itemDescription || !issueDescription) {
+                alert('User ID, Item Description, and Issue Description are required.');
+                return;
+            }
+            const body = { userId, itemDescription, issueDescription, estimatedCost };
+            const response = await makeRequest('/services', 'POST', body);
+            document.getElementById('createServiceRepairResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getServiceRepairs() {
+            let endpoint = '/services?page=1&pageSize=10'; // Example pagination
+            const userIdFilter = document.getElementById('getSrUserIdFilter').value;
+            const statusFilter = document.getElementById('getSrStatusFilter').value;
+
+            if (userIdFilter) {
+                endpoint += `&userId=${encodeURIComponent(userIdFilter)}`;
+            }
+            if (statusFilter) {
+                endpoint += `&serviceStatus=${encodeURIComponent(statusFilter)}`;
+            }
+            const response = await makeRequest(endpoint, 'GET');
+            document.getElementById('getServiceRepairsResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getServiceRepairById() {
+            const serviceRepairId = document.getElementById('getServiceRepairId').value;
+            if (!serviceRepairId) { alert('Please enter a Service/Repair ID.'); return; }
+            const response = await makeRequest(`/services/${serviceRepairId}`, 'GET');
+            document.getElementById('getServiceRepairByIdResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function updateServiceRepair() {
+            const serviceRepairId = document.getElementById('updateSrId').value;
+            const serviceStatus = document.getElementById('updateSrStatus').value;
+            const actualCost = document.getElementById('updateSrActualCost').value ? parseFloat(document.getElementById('updateSrActualCost').value) : undefined;
+
+            if (!serviceRepairId) { alert('Please enter a Service/Repair ID to update.'); return; }
+            if (!serviceStatus) { alert('Please enter a new status for the update.'); return; }
+
+            const body = { serviceStatus, actualCost }; // Add other fields as needed
+            const response = await makeRequest(`/services/${serviceRepairId}`, 'PUT', body);
+            document.getElementById('updateServiceRepairResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function deleteServiceRepair() {
+            const serviceRepairId = document.getElementById('deleteServiceRepairId').value;
+            if (!serviceRepairId) { alert('Please enter a Service/Repair ID to delete.'); return; }
+            const response = await makeRequest(`/services/${serviceRepairId}`, 'DELETE');
+            document.getElementById('deleteServiceRepairResponse').textContent = JSON.stringify(response, null, 2);
         }
 
         // --- Helper to load token from localStorage (optional) ---
