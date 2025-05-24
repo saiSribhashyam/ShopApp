@@ -47,7 +47,7 @@ This Node.js application, built with Express.js and Mongoose, serves as the back
 
 *   **`ShopOwnerModel`**: Stores shop owner/staff credentials (username, hashed PIN, name, role).
 *   **`UserModel`**: Stores customer information.
-*   **`PrescriptionModel`**: Stores optical prescription details, optionally linked to a `User`.
+*   **`PrescriptionModel`**: Stores optical prescription details. It is **mandatorily linked to a `User` via their phone number (`userPhno`)**. Includes `patientName` (as a name snapshot) and `patientAgeAtPrescription` (age at the time of prescription).
 *   **`ProductModel`**: Stores details of products available in the shop.
 *   **`OrderModel`**: Stores customer order information, embedding `OrderItemSchema` for items within an order. Includes references to `User`, `Prescription`, and `ShopOwner` (for `processedBy`).
     *   **`OrderItemSchema`** (sub-document): Details of each product in an order (productId, quantity, unitPrice, totalPrice, snapshots).
@@ -78,8 +78,8 @@ All routes are prefixed with `/api`. Authentication (`protect`) is applied to mo
 ### 4.3. Prescriptions (`/prescriptions`)
 
 *   **`POST /`**: Create a new prescription. (Protected).
-    *   Body: `{ userId?, patientName, prescriptionDate, nvLeftSph?, ..., notes? }`
-*   **`GET /`**: Get all prescriptions. Supports filtering (`?userId=...`). (Protected).
+    *   Body: `{ userPhno, patientName, patientAgeAtPrescription?, prescriptionDate, nvLeftSph?, ..., notes? }`
+*   **`GET /`**: Get all prescriptions. Supports filtering by user's phone number (`?userPhno=...`). (Protected).
 *   **`GET /:id`**: Get a single prescription by ID. (Protected).
 *   **`PUT /:id`**: Update a prescription. (Protected).
     *   Body: (Fields to update)

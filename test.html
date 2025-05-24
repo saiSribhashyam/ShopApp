@@ -167,10 +167,12 @@
             <h2>Prescription Management (/prescriptions)</h2>
             <div>
                 <h3>Create Prescription (POST /prescriptions)</h3>
-                <label for="prescUserId">User ID (Optional, if linking to existing user):</label>
-                <input type="text" id="prescUserId" placeholder="User ID">
-                <label for="prescPatientName">Patient Name:</label>
-                <input type="text" id="prescPatientName" value="Walk-in Patient">
+                <label for="prescUserPhno">User Phone Number (to link prescription):</label>
+                <input type="text" id="prescUserPhno" placeholder="User's Phone Number">
+                <label for="prescPatientName">Patient Name (Snapshot):</label>
+                <input type="text" id="prescPatientName" value="Patient Name Snapshot">
+                <label for="prescPatientAge">Patient Age at Prescription (Optional):</label>
+                <input type="number" id="prescPatientAge" placeholder="Patient's Age">
                 <label for="prescDate">Prescription Date (YYYY-MM-DD):</label>
                 <input type="text" id="prescDate" value="2023-10-26">
                 <label for="prescDvRightSph">DV Right SPH (Example field):</label>
@@ -183,8 +185,8 @@
             <hr>
             <div>
                 <h3>Get Prescriptions (GET /prescriptions)</h3>
-                <label for="getPrescUserIdFilter">Filter by User ID (Optional):</label>
-                <input type="text" id="getPrescUserIdFilter" placeholder="User ID">
+                <label for="getPrescUserPhnoFilter">Filter by User Phone Number (Optional):</label>
+                <input type="text" id="getPrescUserPhnoFilter" placeholder="User Phone Number">
                 <button onclick="getPrescriptions()">Get Prescriptions</button>
                 <pre id="getPrescriptionsResponse"></pre>
             </div>
@@ -410,26 +412,27 @@
 
         // --- Prescription Functions ---
         async function createPrescription() {
-            const userId = document.getElementById('prescUserId').value || undefined; // Optional
+            const userPhno = document.getElementById('prescUserPhno').value;
             const patientName = document.getElementById('prescPatientName').value;
+            const patientAgeAtPrescription = document.getElementById('prescPatientAge').value ? parseInt(document.getElementById('prescPatientAge').value) : undefined;
             const prescriptionDate = document.getElementById('prescDate').value;
             const dvRightSph = parseFloat(document.getElementById('prescDvRightSph').value); // Example field
             const notes = document.getElementById('prescNotes').value;
 
-            if (!patientName || !prescriptionDate) {
-                alert('Patient Name and Prescription Date are required.');
+            if (!userPhno || !patientName || !prescriptionDate) { // userPhno is now mandatory
+                alert('User Phone Number, Patient Name, and Prescription Date are required.');
                 return;
             }
-            const body = { userId, patientName, prescriptionDate, dvRightSph, notes };
+            const body = { userPhno, patientName, patientAgeAtPrescription, prescriptionDate, dvRightSph, notes };
             const response = await makeRequest('/prescriptions', 'POST', body);
             document.getElementById('createPrescriptionResponse').textContent = JSON.stringify(response, null, 2);
         }
 
         async function getPrescriptions() {
             let endpoint = '/prescriptions';
-            const userIdFilter = document.getElementById('getPrescUserIdFilter').value;
-            if (userIdFilter) {
-                endpoint += `?userId=${encodeURIComponent(userIdFilter)}`;
+            const userPhnoFilter = document.getElementById('getPrescUserPhnoFilter').value; // Changed ID
+            if (userPhnoFilter) {
+                endpoint += `?userPhno=${encodeURIComponent(userPhnoFilter)}`; // Changed query param
             }
             const response = await makeRequest(endpoint, 'GET');
             document.getElementById('getPrescriptionsResponse').textContent = JSON.stringify(response, null, 2);
