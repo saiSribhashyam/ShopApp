@@ -6,23 +6,20 @@ const Product = require('../models/ProductModel');
 const createProduct = async (req, res) => {
   const {
     productName, productType, brand, modelNumber, supplier,
-    costPrice, sellingPrice, stockQuantity
+    // costPrice, sellingPrice, // Removed
+    stockQuantity
   } = req.body;
 
-  if (!productName || !productType || costPrice === undefined || sellingPrice === undefined) {
-    return res.status(400).json({ message: 'Product Name, Product Type, Cost Price, and Selling Price are required' });
+  // Updated validation
+  if (!productName || !productType) {
+    return res.status(400).json({ message: 'Product Name and Product Type are required' });
   }
 
   try {
-    // Optional: Check for existing product based on a unique combination if needed
-    // const productExists = await Product.findOne({ productName, brand, modelNumber });
-    // if (productExists) {
-    //   return res.status(400).json({ message: 'Product with this name, brand, and model already exists' });
-    // }
-
     const product = new Product({
       productName, productType, brand, modelNumber, supplier,
-      costPrice, sellingPrice, stockQuantity
+      // costPrice, sellingPrice, // Removed
+      stockQuantity
     });
 
     const createdProduct = await product.save();
@@ -32,7 +29,7 @@ const createProduct = async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message, errors: error.errors });
     }
-    if (error.code === 11000) { // Handle duplicate key error for unique indexes
+    if (error.code === 11000) { 
         return res.status(400).json({ message: 'Product with these details (e.g., name, brand, model) already exists.', error: error.keyValue });
     }
     res.status(500).json({ message: 'Server Error creating product', error: error.message });
@@ -104,7 +101,8 @@ const getProductById = async (req, res) => {
 const updateProduct = async (req, res) => {
   const {
     productName, productType, brand, modelNumber, supplier,
-    costPrice, sellingPrice, stockQuantity
+    // costPrice, sellingPrice, // Removed
+    stockQuantity
   } = req.body;
 
   try {
@@ -119,12 +117,8 @@ const updateProduct = async (req, res) => {
     product.brand = brand !== undefined ? brand : product.brand;
     product.modelNumber = modelNumber !== undefined ? modelNumber : product.modelNumber;
     product.supplier = supplier !== undefined ? supplier : product.supplier;
-    product.costPrice = costPrice !== undefined ? costPrice : product.costPrice;
-    product.sellingPrice = sellingPrice !== undefined ? sellingPrice : product.sellingPrice;
+    // costPrice and sellingPrice assignments removed
     product.stockQuantity = stockQuantity !== undefined ? stockQuantity : product.stockQuantity;
-
-    // Optional: Check for unique constraints if critical fields are changed
-    // Example: if (productName || brand || modelNumber) { ... check for duplicates ... }
 
     const updatedProduct = await product.save();
     res.json(updatedProduct);
@@ -150,9 +144,6 @@ const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (product) {
-      // Considerations:
-      // - Check if product is in any active orders before deleting.
-      // - Implement soft delete (e.g., add an `isActive` flag) instead of hard delete.
       await product.deleteOne();
       res.json({ message: 'Product removed' });
     } else {
@@ -171,7 +162,7 @@ const deleteProduct = async (req, res) => {
 // @route   PUT /api/products/:id/stock
 // @access  Private
 const updateStock = async (req, res) => {
-    const { quantityChange, type } = req.body; // quantityChange can be positive or negative, type can be 'absolute' or 'relative'
+    const { quantityChange, type } = req.body; 
 
     if (quantityChange === undefined || type === undefined) {
         return res.status(400).json({ message: "Quantity change and type ('absolute' or 'relative') are required." });
@@ -192,8 +183,6 @@ const updateStock = async (req, res) => {
         }
 
         if (product.stockQuantity < 0) {
-            // Decide if this should be an error or if stock can go negative (e.g., backorders)
-            // For now, let's prevent it from going below zero through this specific endpoint.
              return res.status(400).json({ message: "Stock quantity cannot be negative after update." });
         }
 

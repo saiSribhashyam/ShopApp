@@ -10,7 +10,7 @@ const createOrder = async (req, res) => {
     const {
         userId,
         prescriptionId, // Optional
-        orderItems, // Array of { productId, quantity, unitPrice (optional, can fetch from Product) }
+        orderItems, // Array of { productId, quantity, unitPrice (NOW REQUIRED) }
         advancePaid,
         paymentStatus,
         expectedDeliveryTimestamp,
@@ -20,7 +20,7 @@ const createOrder = async (req, res) => {
     } = req.body;
 
     if (!userId || !orderItems || orderItems.length === 0 || !orderType) {
-        return res.status(400).json({ message: 'User, Order Items, and Order Type are required.' });
+        return res.status(400).json({ message: 'User, Order Items (each with productId, quantity, unitPrice), and Order Type are required.' });
     }
 
     try {
@@ -32,12 +32,8 @@ const createOrder = async (req, res) => {
         if (prescriptionId) {
             const prescription = await Prescription.findById(prescriptionId);
             if (!prescription) return res.status(404).json({ message: "Prescription not found" });
-            // Optional: Check if prescription belongs to the user
             if (prescription.userId && prescription.userId.toString() !== userId) {
-                // This logic depends on your exact requirements for linking prescriptions
-                // Consider if patientName on prescription should match user.name if prescription.userId is null
                  console.warn("Order Warning: Prescription's user ID does not match the order's user ID.");
-                 // Depending on strictness, you might return an error here.
             }
         }
 
@@ -46,6 +42,18 @@ const createOrder = async (req, res) => {
         const stockUpdates = [];
 
         for (const item of orderItems) {
+            // unitPrice is now mandatory for each item
+            if (item.productId === undefined || item.quantity === undefined || item.unitPrice === undefined) {
+                return res.status(400).json({ message: 'Each order item must include productId, quantity, and unitPrice.' });
+            }
+            if (typeof item.quantity !== 'number' || item.quantity <= 0) {
+                return res.status(400).json({ message: `Invalid quantity for product ID ${item.productId}. Quantity must be a positive number.` });
+            }
+            if (typeof item.unitPrice !== 'number' || item.unitPrice < 0) {
+                return res.status(400).json({ message: `Invalid unitPrice for product ID ${item.productId}. Price must be a non-negative number.` });
+            }
+
+
             const product = await Product.findById(item.productId);
             if (!product) {
                 return res.status(404).json({ message: `Product with ID ${item.productId} not found.` });
@@ -54,7 +62,7 @@ const createOrder = async (req, res) => {
                  return res.status(400).json({ message: `Not enough stock for ${product.productName}. Available: ${product.stockQuantity}, Requested: ${item.quantity}` });
             }
 
-            const unitPrice = item.unitPrice !== undefined ? item.unitPrice : product.sellingPrice;
+            const unitPrice = item.unitPrice; // Directly from request, as it's now required
             const totalPrice = unitPrice * item.quantity;
             calculatedBillAmount += totalPrice;
 
@@ -63,7 +71,7 @@ const createOrder = async (req, res) => {
                 productNameSnapshot: product.productName,
                 productTypeSnapshot: product.productType,
                 quantity: item.quantity,
-                unitPrice: unitPrice,
+                unitPrice: unitPrice, 
                 totalPrice: totalPrice,
             });
 
@@ -124,7 +132,7 @@ const getOrders = async (req, res) => {
             .populate('userId', 'name phno')
             .populate('prescriptionId', 'patientName optometristName')
             .populate('processedBy', 'name username')
-            .populate('orderItems.productId', 'productName brand') // Populate product details within orderItems
+            .populate('orderItems.productId', 'productName brand') 
             .limit(pageSize)
             .skip(pageSize * (page - 1))
             .sort({ orderDate: -1 });
@@ -148,7 +156,7 @@ const getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id)
             .populate('userId', 'name phno email')
-            .populate('prescriptionId') // Populate full prescription
+            .populate('prescriptionId') 
             .populate('processedBy', 'name username')
             .populate('orderItems.productId', 'productName brand modelNumber productType');
 
@@ -173,7 +181,6 @@ const updateOrder = async (req, res) => {
     const {
         advancePaid, paymentStatus, expectedDeliveryTimestamp, actualDeliveryDate,
         isDelivered, orderStatus, notes
-        // orderItems cannot be updated here directly, handle separately if needed (e.g. cancel items, add items might be new order)
     } = req.body;
 
     try {
@@ -183,10 +190,8 @@ const updateOrder = async (req, res) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // Logic for stock adjustment if order is cancelled and items need to be returned to stock
         let shouldRestock = false;
         if (orderStatus === 'Cancelled' && order.orderStatus !== 'Cancelled') {
-            // Only restock if it's changing TO Cancelled from a non-cancelled state
             shouldRestock = true;
         }
 
@@ -198,9 +203,9 @@ const updateOrder = async (req, res) => {
         order.isDelivered = isDelivered !== undefined ? isDelivered : order.isDelivered;
         order.orderStatus = orderStatus || order.orderStatus;
         order.notes = notes !== undefined ? notes : order.notes;
-        order.processedBy = req.shopOwner._id; // Track who last updated
+        order.processedBy = req.shopOwner._id; 
 
-        const updatedOrder = await order.save(); // Bill amount recalculation is handled by pre-save hook if items change
+        const updatedOrder = await order.save(); 
 
         if (shouldRestock) {
             for (const item of order.orderItems) {
@@ -231,20 +236,8 @@ const deleteOrder = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (order) {
-            // IMPORTANT: Consider implications of deleting an order.
-            // - Financial records?
-            // - Should items be restocked? (The current delete doesn't auto-restock)
-            // - Generally, it's better to have a 'Cancelled' or 'Archived' status.
-            // If true deletion is needed, ensure all side effects are handled.
-            // For now, this is a hard delete.
-            
-            // Example: Restock items if order is deleted and was not already cancelled or delivered
-            // This logic can be complex based on your business rules.
             if (order.orderStatus !== 'Cancelled' && !order.isDelivered) {
                  console.warn(`Order ${order._id} is being deleted. Consider restocking items manually or implement a more robust cancellation/archiving process.`);
-                 // for (const item of order.orderItems) {
-                 //   await Product.findByIdAndUpdate(item.productId, { $inc: { stockQuantity: item.quantity }});
-                 // }
             }
 
             await order.deleteOne();

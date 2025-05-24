@@ -114,10 +114,6 @@
                 <input type="text" id="productName" value="Test Frame">
                 <label for="productType">Type (Frame, Lens, etc.):</label>
                 <input type="text" id="productType" value="Frame">
-                <label for="costPrice">Cost Price:</label>
-                <input type="number" id="costPrice" value="500">
-                <label for="sellingPrice">Selling Price:</label>
-                <input type="number" id="sellingPrice" value="1000">
                 <label for="stockQuantity">Stock Quantity:</label>
                 <input type="number" id="stockQuantity" value="10">
                 <button onclick="createProduct()">Create Product</button>
@@ -141,13 +137,15 @@
             <h2>Order Management (/orders)</h2>
             <div>
                 <h3>Create Order (POST /orders) - Simplified</h3>
-                <p><strong>Note:</strong> For simplicity, this form assumes you have valid User and Product IDs.</p>
+                <p><strong>Note:</strong> For simplicity, this form assumes you have valid User/Product IDs. <strong>UnitPrice is now mandatory.</strong></p>
                 <label for="orderUserId">User ID:</label>
                 <input type="text" id="orderUserId" placeholder="Valid User ID from created user">
                 <label for="orderProductId">Product ID (for first item):</label>
                 <input type="text" id="orderProductId" placeholder="Valid Product ID from created product">
                 <label for="orderQuantity">Quantity (for first item):</label>
                 <input type="number" id="orderQuantity" value="1">
+                <label for="orderUnitPrice">Unit Price (for first item):</label>
+                <input type="number" id="orderUnitPrice" value="0">
                 <label for="orderType">Order Type (e.g., FrameOnly):</label>
                 <input type="text" id="orderType" value="FrameOnly">
                 <button onclick="createOrder()">Create Order</button>
@@ -188,7 +186,6 @@
             if (requiresAuth) {
                 const token = getAuthToken();
                 if (!token && method !== 'GET' && endpoint.indexOf('/auth/login') === -1 && endpoint.indexOf('/auth/setup-owner') === -1 ) {
-                    // Allow login and setup without token
                      alert('Auth token is required for this request.');
                      return { error: 'Auth token required' };
                 }
@@ -270,16 +267,14 @@
         async function createProduct() {
             const productName = document.getElementById('productName').value;
             const productType = document.getElementById('productType').value;
-            const costPrice = parseFloat(document.getElementById('costPrice').value);
-            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
             const stockQuantity = parseInt(document.getElementById('stockQuantity').value);
-            const body = { productName, productType, costPrice, sellingPrice, stockQuantity };
+            const body = { productName, productType, stockQuantity }; // Corrected: Removed costPrice, sellingPrice
             const response = await makeRequest('/products', 'POST', body);
             document.getElementById('createProductResponse').textContent = JSON.stringify(response, null, 2);
         }
 
         async function getProducts() {
-            let endpoint = '/products?page=1&pageSize=10'; // Example with pagination
+            let endpoint = '/products?page=1&pageSize=10'; 
             const keyword = document.getElementById('getProductsKeyword').value;
             const type = document.getElementById('getProductsType').value;
             if (keyword) endpoint += `&keyword=${encodeURIComponent(keyword)}`;
@@ -294,16 +289,18 @@
             const userId = document.getElementById('orderUserId').value;
             const productId = document.getElementById('orderProductId').value;
             const quantity = parseInt(document.getElementById('orderQuantity').value);
+            const unitPrice = parseFloat(document.getElementById('orderUnitPrice').value); // Added
             const orderType = document.getElementById('orderType').value;
 
-            if (!userId || !productId || !quantity || !orderType) {
-                alert('User ID, Product ID, Quantity, and Order Type are required for this simplified test.');
+            // Corrected alert condition
+            if (!userId || !productId || !quantity || orderType === '' || unitPrice === undefined || unitPrice < 0) { 
+                alert('User ID, Product ID, Quantity, Unit Price (non-negative), and Order Type are required for this simplified test.');
                 return;
             }
 
             const body = {
                 userId,
-                orderItems: [{ productId, quantity }], // Assuming unitPrice will be fetched by backend
+                orderItems: [{ productId, quantity, unitPrice }], // Corrected: Added unitPrice
                 orderType
             };
             const response = await makeRequest('/orders', 'POST', body);
@@ -311,7 +308,7 @@
         }
 
         async function getOrders() {
-            const response = await makeRequest('/orders?page=1&pageSize=10', 'GET'); // Example with pagination
+            const response = await makeRequest('/orders?page=1&pageSize=10', 'GET');
             document.getElementById('getOrdersResponse').textContent = JSON.stringify(response, null, 2);
         }
 
