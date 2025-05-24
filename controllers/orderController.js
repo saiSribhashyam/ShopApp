@@ -1,39 +1,44 @@
 const Order = require('../models/OrderModel');
 const Product = require('../models/ProductModel');
 const User = require('../models/UserModel');
-const Prescription = require('../models/PrescriptionModel');
+const Prescription = require('../models/PrescriptionModel'); // Ensure this is imported
 
 // @desc    Create a new order
 // @route   POST /api/orders
 // @access  Private
 const createOrder = async (req, res) => {
     const {
-        userId,
-        prescriptionId, // Optional
-        orderItems, // Array of { productId, quantity, unitPrice (NOW REQUIRED) }
+        userId, // This is ObjectId of the user placing the order
+        prescriptionId, // Optional ObjectId of the prescription
+        orderItems, // Array of { productId, quantity, unitPrice (REQUIRED) }
         advancePaid,
         paymentStatus,
         expectedDeliveryTimestamp,
         orderType,
-        orderStatus, // Optional, defaults in model
+        orderStatus, 
         notes
     } = req.body;
 
     if (!userId || !orderItems || orderItems.length === 0 || !orderType) {
-        return res.status(400).json({ message: 'User, Order Items (each with productId, quantity, unitPrice), and Order Type are required.' });
+        return res.status(400).json({ message: 'User ID, Order Items (each with productId, quantity, unitPrice), and Order Type are required.' });
     }
 
     try {
-        // Validate User
-        const user = await User.findById(userId);
+        // Validate User placing the order
+        const user = await User.findById(userId); // user is the one placing the order
         if (!user) return res.status(404).json({ message: "User not found" });
 
         // Validate Prescription if provided
         if (prescriptionId) {
             const prescription = await Prescription.findById(prescriptionId);
             if (!prescription) return res.status(404).json({ message: "Prescription not found" });
-            if (prescription.userId && prescription.userId.toString() !== userId) {
-                 console.warn("Order Warning: Prescription's user ID does not match the order's user ID.");
+            
+            // CORRECTED VALIDATION:
+            // Check if the prescription's linked phone number (userPhno) matches the phone number (phno) of the user placing the order.
+            if (prescription.userPhno && user.phno !== prescription.userPhno) { 
+                 console.warn(`Order Warning: The prescription provided (linked to phone ${prescription.userPhno}) does not seem to belong to the user placing the order (phone ${user.phno}).`);
+                 // Depending on business logic, this could be a hard error:
+                 // return res.status(400).json({ message: "Prescription does not belong to the specified user." });
             }
         }
 
@@ -42,7 +47,6 @@ const createOrder = async (req, res) => {
         const stockUpdates = [];
 
         for (const item of orderItems) {
-            // unitPrice is now mandatory for each item
             if (item.productId === undefined || item.quantity === undefined || item.unitPrice === undefined) {
                 return res.status(400).json({ message: 'Each order item must include productId, quantity, and unitPrice.' });
             }
@@ -53,7 +57,6 @@ const createOrder = async (req, res) => {
                 return res.status(400).json({ message: `Invalid unitPrice for product ID ${item.productId}. Price must be a non-negative number.` });
             }
 
-
             const product = await Product.findById(item.productId);
             if (!product) {
                 return res.status(404).json({ message: `Product with ID ${item.productId} not found.` });
@@ -62,7 +65,7 @@ const createOrder = async (req, res) => {
                  return res.status(400).json({ message: `Not enough stock for ${product.productName}. Available: ${product.stockQuantity}, Requested: ${item.quantity}` });
             }
 
-            const unitPrice = item.unitPrice; // Directly from request, as it's now required
+            const unitPrice = item.unitPrice;
             const totalPrice = unitPrice * item.quantity;
             calculatedBillAmount += totalPrice;
 
@@ -79,8 +82,8 @@ const createOrder = async (req, res) => {
         }
 
         const orderData = {
-            userId,
-            prescriptionId,
+            userId, // ObjectId of the user
+            prescriptionId, // ObjectId of the prescription, if any
             orderItems: processedOrderItems,
             billAmount: req.body.billAmount !== undefined ? req.body.billAmount : calculatedBillAmount,
             advancePaid,
@@ -88,15 +91,13 @@ const createOrder = async (req, res) => {
             expectedDeliveryTimestamp,
             orderType,
             notes,
-            processedBy: req.shopOwner._id // From authMiddleware
+            processedBy: req.shopOwner._id 
         };
         if(orderStatus) orderData.orderStatus = orderStatus;
-
 
         const order = new Order(orderData);
         const createdOrder = await order.save();
 
-        // Decrease stock quantity for products in the order
         for (const supdate of stockUpdates) {
             await Product.findByIdAndUpdate(supdate.productId, { $inc: { stockQuantity: -supdate.quantity } });
         }
@@ -120,17 +121,16 @@ const getOrders = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
 
     const query = {};
-    if (req.query.userId) query.userId = req.query.userId;
+    if (req.query.userId) query.userId = req.query.userId; // userId is ObjectId
     if (req.query.paymentStatus) query.paymentStatus = req.query.paymentStatus;
     if (req.query.orderStatus) query.orderStatus = req.query.orderStatus;
     if (req.query.isDelivered) query.isDelivered = req.query.isDelivered === 'true';
 
-
     try {
         const count = await Order.countDocuments(query);
         const orders = await Order.find(query)
-            .populate('userId', 'name phno')
-            .populate('prescriptionId', 'patientName optometristName')
+            .populate('userId', 'name phno') // Populates user who placed the order
+            .populate('prescriptionId') // Populates the linked prescription details
             .populate('processedBy', 'name username')
             .populate('orderItems.productId', 'productName brand') 
             .limit(pageSize)
@@ -195,7 +195,6 @@ const updateOrder = async (req, res) => {
             shouldRestock = true;
         }
 
-
         order.advancePaid = advancePaid !== undefined ? advancePaid : order.advancePaid;
         order.paymentStatus = paymentStatus || order.paymentStatus;
         order.expectedDeliveryTimestamp = expectedDeliveryTimestamp !== undefined ? expectedDeliveryTimestamp : order.expectedDeliveryTimestamp;
@@ -214,7 +213,6 @@ const updateOrder = async (req, res) => {
             console.log(`Order ${order._id} cancelled. Items restocked.`);
         }
 
-
         res.json(updatedOrder);
     } catch (error) {
         console.error("Update Order Error:", error);
@@ -227,7 +225,6 @@ const updateOrder = async (req, res) => {
         res.status(500).json({ message: 'Server Error updating order', error: error.message });
     }
 };
-
 
 // @desc    Delete an order (use with caution, prefer cancelling)
 // @route   DELETE /api/orders/:id
@@ -253,7 +250,6 @@ const deleteOrder = async (req, res) => {
         res.status(500).json({ message: 'Server Error deleting order' });
     }
 };
-
 
 module.exports = {
   createOrder,
