@@ -1,16 +1,18 @@
 const Order = require('../models/OrderModel');
 const Product = require('../models/ProductModel');
 const User = require('../models/UserModel');
-const Prescription = require('../models/PrescriptionModel'); // Ensure this is imported
+const Prescription = require('../models/PrescriptionModel');
+// Import the refactored helper
+const { populateUserDetailsForPrescriptions } = require('../utils/populationHelpers');
 
 // @desc    Create a new order
 // @route   POST /api/orders
 // @access  Private
 const createOrder = async (req, res) => {
     const {
-        userId, // This is ObjectId of the user placing the order
-        prescriptionId, // Optional ObjectId of the prescription
-        orderItems, // Array of { productId, quantity, unitPrice (REQUIRED) }
+        userId, 
+        prescriptionId, 
+        orderItems, 
         advancePaid,
         paymentStatus,
         expectedDeliveryTimestamp,
@@ -24,21 +26,15 @@ const createOrder = async (req, res) => {
     }
 
     try {
-        // Validate User placing the order
-        const user = await User.findById(userId); // user is the one placing the order
+        const user = await User.findById(userId); 
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Validate Prescription if provided
         if (prescriptionId) {
             const prescription = await Prescription.findById(prescriptionId);
             if (!prescription) return res.status(404).json({ message: "Prescription not found" });
             
-            // CORRECTED VALIDATION:
-            // Check if the prescription's linked phone number (userPhno) matches the phone number (phno) of the user placing the order.
             if (prescription.userPhno && user.phno !== prescription.userPhno) { 
                  console.warn(`Order Warning: The prescription provided (linked to phone ${prescription.userPhno}) does not seem to belong to the user placing the order (phone ${user.phno}).`);
-                 // Depending on business logic, this could be a hard error:
-                 // return res.status(400).json({ message: "Prescription does not belong to the specified user." });
             }
         }
 
@@ -47,6 +43,7 @@ const createOrder = async (req, res) => {
         const stockUpdates = [];
 
         for (const item of orderItems) {
+            // ... (item validation as before) ...
             if (item.productId === undefined || item.quantity === undefined || item.unitPrice === undefined) {
                 return res.status(400).json({ message: 'Each order item must include productId, quantity, and unitPrice.' });
             }
@@ -77,23 +74,15 @@ const createOrder = async (req, res) => {
                 unitPrice: unitPrice, 
                 totalPrice: totalPrice,
             });
-
             stockUpdates.push({ productId: product._id, quantity: item.quantity });
         }
 
-        const orderData = {
-            userId, // ObjectId of the user
-            prescriptionId, // ObjectId of the prescription, if any
-            orderItems: processedOrderItems,
-            billAmount: req.body.billAmount !== undefined ? req.body.billAmount : calculatedBillAmount,
-            advancePaid,
-            paymentStatus,
-            expectedDeliveryTimestamp,
-            orderType,
-            notes,
-            processedBy: req.shopOwner._id 
+        const orderData = { /* ... as before ... */ 
+            userId, prescriptionId, orderItems: processedOrderItems, billAmount: req.body.billAmount !== undefined ? req.body.billAmount : calculatedBillAmount,
+            advancePaid, paymentStatus, expectedDeliveryTimestamp, orderType, notes, processedBy: req.shopOwner._id 
         };
         if(orderStatus) orderData.orderStatus = orderStatus;
+
 
         const order = new Order(orderData);
         const createdOrder = await order.save();
@@ -101,8 +90,21 @@ const createOrder = async (req, res) => {
         for (const supdate of stockUpdates) {
             await Product.findByIdAndUpdate(supdate.productId, { $inc: { stockQuantity: -supdate.quantity } });
         }
+        
+        // Populate before sending response for consistency, including the nested prescription's user details
+        const populatedOrder = await Order.findById(createdOrder._id)
+            .populate('userId', 'name phno')
+            .populate('prescriptionId') // Initial populate of prescription
+            .populate('processedBy', 'name username')
+            .populate('orderItems.productId', 'productName brand')
+            .lean(); // Use lean for manual nested population
 
-        res.status(201).json(createdOrder);
+        if (populatedOrder && populatedOrder.prescriptionId) {
+            // Now, manually populate userDetails within the prescriptionId object
+            populatedOrder.prescriptionId = await populateUserDetailsForPrescriptions(populatedOrder.prescriptionId);
+        }
+
+        res.status(201).json(populatedOrder);
 
     } catch (error) {
         console.error("Create Order Error:", error);
@@ -113,7 +115,7 @@ const createOrder = async (req, res) => {
     }
 };
 
-// @desc    Get all orders (with pagination, filtering by user, status)
+// @desc    Get all orders
 // @route   GET /api/orders
 // @access  Private
 const getOrders = async (req, res) => {
@@ -121,21 +123,36 @@ const getOrders = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
 
     const query = {};
-    if (req.query.userId) query.userId = req.query.userId; // userId is ObjectId
+    if (req.query.userId) query.userId = req.query.userId;
     if (req.query.paymentStatus) query.paymentStatus = req.query.paymentStatus;
     if (req.query.orderStatus) query.orderStatus = req.query.orderStatus;
     if (req.query.isDelivered) query.isDelivered = req.query.isDelivered === 'true';
 
     try {
         const count = await Order.countDocuments(query);
-        const orders = await Order.find(query)
-            .populate('userId', 'name phno') // Populates user who placed the order
-            .populate('prescriptionId') // Populates the linked prescription details
+        let orders = await Order.find(query)
+            .populate('userId', 'name phno')
+            .populate('prescriptionId') // Initial populate of prescription
             .populate('processedBy', 'name username')
-            .populate('orderItems.productId', 'productName brand') 
+            .populate('orderItems.productId', 'productName brand')
             .limit(pageSize)
             .skip(pageSize * (page - 1))
-            .sort({ orderDate: -1 });
+            .sort({ orderDate: -1 })
+            .lean(); // Use .lean() as we are modifying the objects
+
+        // Manually populate userDetails for each prescription within orders
+        if (orders && orders.length > 0) {
+            for (let i = 0; i < orders.length; i++) {
+                if (orders[i].prescriptionId) {
+                    // The populateUserDetailsForPrescriptions function expects a Mongoose document or plain object
+                    // Since we used .lean(), orders[i].prescriptionId is already a plain object if populated.
+                    // If it wasn't populated (e.g. prescriptionId was null and then removed by lean's option), 
+                    // or if it's just an ID, the helper should handle it.
+                    // The helper function will check if it's null and return null.
+                    orders[i].prescriptionId = await populateUserDetailsForPrescriptions(orders[i].prescriptionId);
+                }
+            }
+        }
 
         res.json({
             orders,
@@ -154,13 +171,20 @@ const getOrders = async (req, res) => {
 // @access  Private
 const getOrderById = async (req, res) => {
     try {
+        // Use .lean() to get a plain JS object, makes subsequent manual population easier
         const order = await Order.findById(req.params.id)
             .populate('userId', 'name phno email')
-            .populate('prescriptionId') 
+            .populate('prescriptionId') // Initial populate of prescription
             .populate('processedBy', 'name username')
-            .populate('orderItems.productId', 'productName brand modelNumber productType');
+            .populate('orderItems.productId', 'productName brand modelNumber productType')
+            .lean(); 
 
         if (order) {
+            // If a prescription is linked, populate its userDetails
+            if (order.prescriptionId) {
+                // order.prescriptionId is already a plain object due to .lean()
+                order.prescriptionId = await populateUserDetailsForPrescriptions(order.prescriptionId);
+            }
             res.json(order);
         } else {
             res.status(404).json({ message: 'Order not found' });
@@ -184,7 +208,7 @@ const updateOrder = async (req, res) => {
     } = req.body;
 
     try {
-        const order = await Order.findById(req.params.id);
+        const order = await Order.findById(req.params.id); // Fetch full Mongoose doc for save()
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
@@ -197,6 +221,7 @@ const updateOrder = async (req, res) => {
 
         order.advancePaid = advancePaid !== undefined ? advancePaid : order.advancePaid;
         order.paymentStatus = paymentStatus || order.paymentStatus;
+        // ... (rest of assignments as before) ...
         order.expectedDeliveryTimestamp = expectedDeliveryTimestamp !== undefined ? expectedDeliveryTimestamp : order.expectedDeliveryTimestamp;
         order.actualDeliveryDate = actualDeliveryDate !== undefined ? actualDeliveryDate : order.actualDeliveryDate;
         order.isDelivered = isDelivered !== undefined ? isDelivered : order.isDelivered;
@@ -204,16 +229,29 @@ const updateOrder = async (req, res) => {
         order.notes = notes !== undefined ? notes : order.notes;
         order.processedBy = req.shopOwner._id; 
 
-        const updatedOrder = await order.save(); 
+        const updatedOrderRaw = await order.save(); 
+        
+        // Populate before sending response
+        let populatedUpdatedOrder = await Order.findById(updatedOrderRaw._id)
+            .populate('userId', 'name phno')
+            .populate('prescriptionId')
+            .populate('processedBy', 'name username')
+            .populate('orderItems.productId', 'productName brand')
+            .lean();
+
+        if (populatedUpdatedOrder && populatedUpdatedOrder.prescriptionId) {
+            populatedUpdatedOrder.prescriptionId = await populateUserDetailsForPrescriptions(populatedUpdatedOrder.prescriptionId);
+        }
+
 
         if (shouldRestock) {
-            for (const item of order.orderItems) {
+            for (const item of order.orderItems) { // Use order.orderItems as it's from the original doc
                 await Product.findByIdAndUpdate(item.productId, { $inc: { stockQuantity: item.quantity } });
             }
             console.log(`Order ${order._id} cancelled. Items restocked.`);
         }
 
-        res.json(updatedOrder);
+        res.json(populatedUpdatedOrder);
     } catch (error) {
         console.error("Update Order Error:", error);
         if (error.name === 'ValidationError') {
@@ -226,17 +264,17 @@ const updateOrder = async (req, res) => {
     }
 };
 
-// @desc    Delete an order (use with caution, prefer cancelling)
+// @desc    Delete an order
 // @route   DELETE /api/orders/:id
 // @access  Private (OwnerOnly recommended)
 const deleteOrder = async (req, res) => {
+    // ... (delete logic as before) ...
     try {
         const order = await Order.findById(req.params.id);
         if (order) {
             if (order.orderStatus !== 'Cancelled' && !order.isDelivered) {
                  console.warn(`Order ${order._id} is being deleted. Consider restocking items manually or implement a more robust cancellation/archiving process.`);
             }
-
             await order.deleteOne();
             res.json({ message: 'Order removed' });
         } else {

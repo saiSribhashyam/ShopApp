@@ -203,7 +203,11 @@
                 <h3>Update Prescription (PUT /prescriptions/:id)</h3>
                 <label for="updatePrescId">Prescription ID to Update:</label>
                 <input type="text" id="updatePrescId" placeholder="Prescription ID">
-                <label for="updatePrescNotes">New Notes (Example update field):</label>
+                <label for="updatePrescUserPhno">New User Phone Number (Optional):</label>
+                <input type="text" id="updatePrescUserPhno" placeholder="New User Phone Number">
+                <label for="updatePrescPatientAge">New Patient Age (Optional):</label>
+                <input type="number" id="updatePrescPatientAge" placeholder="New Patient Age">
+                <label for="updatePrescNotes">New Notes (Optional):</label>
                 <textarea id="updatePrescNotes" rows="2"></textarea>
                 <button onclick="updatePrescription()">Update Prescription</button>
                 <pre id="updatePrescriptionResponse"></pre>
@@ -447,12 +451,31 @@
 
         async function updatePrescription() {
             const prescriptionId = document.getElementById('updatePrescId').value;
-            const notes = document.getElementById('updatePrescNotes').value; // Example: only updating notes
+            const userPhno = document.getElementById('updatePrescUserPhno').value;
+            const patientAgeAtPrescription = document.getElementById('updatePrescPatientAge').value;
+            const notes = document.getElementById('updatePrescNotes').value;
 
-            if (!prescriptionId) { alert('Please enter a Prescription ID to update.'); return; }
-            if (notes === '') { alert('Please enter new notes for the update (example).'); return;}
+            if (!prescriptionId) { 
+                alert('Please enter a Prescription ID to update.'); 
+                return; 
+            }
 
-            const body = { notes }; // Add other fields as needed for a more complete update form
+            const body = {};
+            if (userPhno) {
+                body.userPhno = userPhno;
+            }
+            if (patientAgeAtPrescription) {
+                body.patientAgeAtPrescription = parseInt(patientAgeAtPrescription);
+            }
+            if (notes) { // Keep notes optional, or make mandatory if desired
+                body.notes = notes;
+            }
+
+            if (Object.keys(body).length === 0) {
+                alert('Please enter at least one field to update (e.g., User Phone, Patient Age, Notes).');
+                return;
+            }
+
             const response = await makeRequest(`/prescriptions/${prescriptionId}`, 'PUT', body);
             document.getElementById('updatePrescriptionResponse').textContent = JSON.stringify(response, null, 2);
         }
