@@ -10,8 +10,8 @@ const productSchema = new mongoose.Schema({
   brand: { type: String, trim: true },
   modelNumber: { type: String, trim: true },
   supplier: { type: String, trim: true },
-  costPrice: { type: Number, required: [true, "Cost price is required"], min: 0 },
-  sellingPrice: { type: Number, required: [true, "Selling price is required"], min: 0 },
+  // costPrice: { type: Number, required: [true, "Cost price is required"], min: 0 }, // Removed
+  // sellingPrice: { type: Number, required: [true, "Selling price is required"], min: 0 }, // Removed
   stockQuantity: { type: Number, default: 0, min: 0 },
 }, { timestamps: true });
 

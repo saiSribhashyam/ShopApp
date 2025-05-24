@@ -88,11 +88,11 @@ All routes are prefixed with `/api`. Authentication (`protect`) is applied to mo
 ### 4.4. Products (`/products`)
 
 *   **`POST /`**: Create a new product. (Protected).
-    *   Body: `{ productName, productType, costPrice, sellingPrice, brand?, modelNumber?, supplier?, stockQuantity? }`
+    *   Body: `{ productName, productType, brand?, modelNumber?, supplier?, stockQuantity? }`
 *   **`GET /`**: Get all products. Supports pagination (`?page=1&pageSize=10`), search (`?keyword=...`), and filtering (`?productType=...`). (Protected).
 *   **`GET /:id`**: Get a single product by ID. (Protected).
 *   **`PUT /:id`**: Update a product. (Protected).
-    *   Body: (Fields to update)
+    *   Body: `{ productName?, productType?, brand?, modelNumber?, supplier?, stockQuantity? }` <!-- Explicitly listing fields without price -->
 *   **`DELETE /:id`**: Delete a product. (Protected, OwnerOnly).
 *   **`PUT /:id/stock`**: Manually update stock quantity for a product. (Protected).
     *   Body: `{ quantityChange, type ('absolute' | 'relative') }`
@@ -100,7 +100,7 @@ All routes are prefixed with `/api`. Authentication (`protect`) is applied to mo
 ### 4.5. Orders (`/orders`)
 
 *   **`POST /`**: Create a new order. (Protected).
-    *   Body: `{ userId, orderItems: [{ productId, quantity, unitPrice? }], orderType, advancePaid?, paymentStatus?, expectedDeliveryTimestamp?, notes?, prescriptionId? }`
+    *   Body: `{ userId, orderItems: [{ productId, quantity, unitPrice }], orderType, advancePaid?, paymentStatus?, expectedDeliveryTimestamp?, notes?, prescriptionId? }` <!-- unitPrice is now mandatory -->
 *   **`GET /`**: Get all orders. Supports pagination (`?page=1&pageSize=10`) and filtering (`?userId=...`, `?paymentStatus=...`, `?orderStatus=...`, `?isDelivered=...`). (Protected).
 *   **`GET /:id`**: Get a single order by ID. (Protected).
 *   **`PUT /:id`**: Update an order (status, payment, delivery details, etc.). (Protected).
