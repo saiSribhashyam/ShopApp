@@ -161,6 +161,19 @@
         </div>
     </div>
 
+    <div class="flex-container">
+        <div class="flex-item endpoint-section" id="globalSearchSection">
+            <h2>Global User Search</h2>
+            <div>
+                <h3>Get All User Details by Phone (GET /users/details-by-phone/:phno)</h3>
+                <label for="globalSearchPhno">Phone Number:</label>
+                <input type="text" id="globalSearchPhno" placeholder="Enter User's Phone Number">
+                <button onclick="getUserDetailsByPhone()">Get All Details</button>
+                <pre id="globalSearchResponse"></pre>
+            </div>
+        </div>
+    </div>
+
     <!-- Placeholder for Prescription and Service/Repair sections -->
     <div class="flex-container">
         <div class="flex-item endpoint-section" id="prescriptionSection">
@@ -485,6 +498,17 @@
             if (!prescriptionId) { alert('Please enter a Prescription ID to delete.'); return; }
             const response = await makeRequest(`/prescriptions/${prescriptionId}`, 'DELETE');
             document.getElementById('deletePrescriptionResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Global User Search Function ---
+        async function getUserDetailsByPhone() {
+            const phno = document.getElementById('globalSearchPhno').value;
+            if (!phno) {
+                alert('Please enter a Phone Number for the global search.');
+                return;
+            }
+            const response = await makeRequest(`/users/details-by-phone/${phno}`, 'GET');
+            document.getElementById('globalSearchResponse').textContent = JSON.stringify(response, null, 2);
         }
 
         // --- Service/Repair Functions ---
