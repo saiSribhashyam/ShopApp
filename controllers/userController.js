@@ -1,4 +1,8 @@
 const User = require('../models/UserModel');
+const Prescription = require('../models/PrescriptionModel');
+const Order = require('../models/OrderModel');
+const ServiceRepair = require('../models/ServiceRepairModel');
+const { populateUserDetailsForPrescriptions } = require('../utils/populationHelpers'); // For prescriptions
 
 // @desc    Create a new customer
 // @route   POST /api/users
@@ -44,7 +48,7 @@ const getUsers = async (req, res) => {
     const users = await User.find({ ...searchQuery })
       .limit(pageSize)
       .skip(pageSize * (page - 1))
-      .sort({ createdAt: -1 }); // Sort by newest first
+      .sort({ createdAt: -1 }); 
 
     res.json({
       users,
@@ -89,7 +93,7 @@ const updateUser = async (req, res) => {
     if (user) {
       user.name = name || user.name;
       user.phno = phno || user.phno;
-      user.age = age === undefined ? user.age : age; // Allow setting age to 0 or null
+      user.age = age === undefined ? user.age : age; 
       user.gender = gender || user.gender;
       user.street = street || user.street;
       user.city = city || user.city;
@@ -97,7 +101,6 @@ const updateUser = async (req, res) => {
       user.zipCode = zipCode || user.zipCode;
       user.customerType = customerType || user.customerType;
 
-      // Check if phno is being changed and if it conflicts
       if (phno && phno !== user.phno) {
           const existingUserWithPhno = await User.findOne({ phno: phno });
           if (existingUserWithPhno && existingUserWithPhno._id.toString() !== user._id.toString()) {
@@ -129,9 +132,7 @@ const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (user) {
-      // Add logic here: what happens to their prescriptions/orders?
-      // For now, just deleting the user. Consider soft deletes or cascading effects.
-      await user.deleteOne(); // or user.remove() in older mongoose
+      await user.deleteOne(); 
       res.json({ message: 'Customer removed' });
     } else {
       res.status(404).json({ message: 'Customer not found' });
@@ -145,6 +146,50 @@ const deleteUser = async (req, res) => {
   }
 };
 
+// @desc    Get comprehensive user details by Phone Number (Global Search)
+// @route   GET /api/users/details-by-phone/:phno
+// @access  Private
+const getUserDetailsByPhoneNumber = async (req, res) => {
+    const { phno } = req.params;
+
+    try {
+        const userDetails = await User.findOne({ phno: phno }).lean();
+        if (!userDetails) {
+            return res.status(404).json({ message: `User with phone number ${phno} not found.` });
+        }
+
+        // Fetch prescriptions linked by userPhno
+        const prescriptionsRaw = await Prescription.find({ userPhno: phno }).sort({ prescriptionDate: -1 }).lean();
+        // Even though we have userDetails, populating here ensures consistency if prescriptions are used standalone
+        const prescriptions = await populateUserDetailsForPrescriptions(prescriptionsRaw); 
+
+        // Fetch orders linked by userId (User's ObjectId)
+        const orders = await Order.find({ userId: userDetails._id })
+            .populate('prescriptionId', 'patientName optometristName prescriptionDate') // Populate some prescription details
+            .populate('orderItems.productId', 'productName brand')
+            .populate('processedBy', 'name')
+            .sort({ orderDate: -1 })
+            .lean();
+        
+        // Fetch service/repairs linked by userId
+        const serviceRepairs = await ServiceRepair.find({ userId: userDetails._id })
+            .populate('processedBy', 'name')
+            .sort({ dateReceived: -1 })
+            .lean();
+
+        res.json({
+            userDetails,
+            prescriptions,
+            orders,
+            serviceRepairs,
+        });
+
+    } catch (error) {
+        console.error(`Error fetching details for phone ${phno}:`, error);
+        res.status(500).json({ message: 'Server error fetching user details.', error: error.message });
+    }
+};
+
 
 module.exports = {
   createUser,
@@ -152,4 +197,5 @@ module.exports = {
   getUserById,
   updateUser,
   deleteUser,
+  getUserDetailsByPhoneNumber, // Export the new function
 };

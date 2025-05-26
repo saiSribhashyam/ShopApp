@@ -70,6 +70,20 @@ All routes are prefixed with `/api`. Authentication (`protect`) is applied to mo
 *   **`POST /`**: Create a new customer. (Protected).
     *   Body: `{ name, phno, age?, gender?, street?, city?, state?, zipCode?, customerType? }`
 *   **`GET /`**: Get all customers. Supports pagination (`?page=1&pageSize=10`) and search (`?phno=...`). (Protected).
+*   **`GET /details-by-phone/:phno`**: Get comprehensive user details by phone number. (Protected).
+    *   Retrieves user's personal details.
+    *   Retrieves all prescriptions linked to the user's phone number (includes populated user details within each prescription for consistency).
+    *   Retrieves all orders placed by the user (identified by their `_id`, includes populated prescription and product details).
+    *   Retrieves all service/repair requests for the user.
+    *   Response structure:
+        ```json
+        {
+          "userDetails": { ...user fields... },
+          "prescriptions": [ ...list of prescriptions... ],
+          "orders": [ ...list of orders... ],
+          "serviceRepairs": [ ...list of service/repairs... ]
+        }
+        ```
 *   **`GET /:id`**: Get a single customer by ID. (Protected).
 *   **`PUT /:id`**: Update a customer. (Protected).
     *   Body: (Fields to update)
