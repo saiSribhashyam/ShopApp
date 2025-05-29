@@ -550,8 +550,52 @@ Most routes are protected and require the JWT token in the `Authorization` heade
     *   **URL Parameter**: `:id` - The ObjectId of the request.
     *   **Success Response (200)**: `{ "message": "Service/Repair request removed" }`.
 
+---
+**6.A. Analytics API (`/analytics`)**
+---
 
-## 7. Error Handling
+This section details endpoints for retrieving analytics data. All routes are protected and require JWT authentication.
+
+*   **Get Sales Summary KPIs**
+    *   **Method**: `GET`
+    *   **Path**: `/analytics/sales-summary`
+    *   **Protected**: Yes
+    *   **Description**: Retrieves key performance indicators for sales, such as total revenue, average order value, total orders, and total items sold.
+    *   **Query Parameters**:
+        *   `startDate?`: String (Format: `YYYY-MM-DD`, e.g., `2023-01-01`) - Filters orders created on or after this date.
+        *   `endDate?`: String (Format: `YYYY-MM-DD`, e.g., `2023-01-31`) - Filters orders created on or before this date.
+    *   **Success Response (200)**:
+        ```json
+        {
+          "totalRevenue": 12500.75,
+          "averageOrderValue": 250.01,
+          "totalOrders": 50,
+          "totalItemsSold": 120
+        }
+        ```
+        *(Note: If no orders match the criteria, all values will be 0.)*
+
+*   **Get Sales Over Time**
+    *   **Method**: `GET`
+    *   **Path**: `/analytics/sales-over-time`
+    *   **Protected**: Yes
+    *   **Description**: Retrieves sales trend data (revenue and order count) grouped by specified periods.
+    *   **Query Parameters**:
+        *   `startDate?`: String (Format: `YYYY-MM-DD`)
+        *   `endDate?`: String (Format: `YYYY-MM-DD`)
+        *   `period?`: String (Enum: `daily`, `weekly`, `monthly`. Defaults to `monthly`) - The time period to group data by.
+    *   **Success Response (200)** (Example for `period=monthly`):
+        ```json
+        [
+          { "period": "2023-01", "revenue": 5000, "orders": 20 },
+          { "period": "2023-02", "revenue": 7500, "orders": 30 },
+          // ... more data points
+        ]
+        ```
+        *(Note: For `period=daily`, 'period' will be like "2023-01-15". For `period=weekly`, 'period' will be like "2023-W03".)*
+
+
+## 8. Error Handling
 
 The API uses standard HTTP status codes to indicate the success or failure of a request.
 
@@ -584,7 +628,7 @@ The API uses standard HTTP status codes to indicate the success or failure of a 
         ```
     *   The error response generally includes a `message` field. In development mode (`NODE_ENV=development`), it may also include a `stack` trace.
 
-## 8. Basic Workflow Example: New Customer Order for Spectacles
+## 9. Basic Workflow Example: New Customer Order for Spectacles
 
 1.  **Shop Staff Logs In**:
     *   Frontend: Sends `POST /api/auth/login` with `username` and `pin`.
@@ -625,7 +669,7 @@ The API uses standard HTTP status codes to indicate the success or failure of a 
     *   Frontend: Staff searches by phone `GET /api/users/details-by-phone/newUser.phno` (with token).
     *   Backend: Responds with all details for that customer.
 
-## 9. Tips for Frontend Development
+## 10. Tips for Frontend Development
 
 *   **CORS (Cross-Origin Resource Sharing)**: The backend currently uses `app.use(cors())` which allows requests from any origin. For production, this should be configured to allow requests only from the specific frontend domain(s).
 *   **HTTP Headers**:

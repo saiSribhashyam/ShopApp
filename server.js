@@ -7,7 +7,7 @@ const connectDB = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 // Load env vars
-dotenv.config(); // This will look for a .env file in the root
+dotenv.config(); 
 
 // Connect to database
 connectDB();
@@ -17,17 +17,18 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const prescriptionRoutes = require('./routes/prescriptionRoutes');
 const productRoutes = require('./routes/productRoutes');
-const orderRoutes = require('./routes/orderRoutes'); // Ensure this is uncommented
-const serviceRepairRoutes = require('./routes/serviceRepairRoutes'); // Ensure this is uncommented
+const orderRoutes = require('./routes/orderRoutes'); 
+const serviceRepairRoutes = require('./routes/serviceRepairRoutes'); 
+const analyticsRoutes = require('./routes/analyticsRoutes'); // ADD THIS IMPORT
 
 const app = express();
 
 // Body parser middleware
-app.use(express.json()); // To accept JSON data in req.body
-app.use(express.urlencoded({ extended: false })); // To accept URL encoded data
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: false })); 
 
-// CORS middleware - allow requests from your Flutter app's origin
-app.use(cors()); // For development, you can open it. For production, specify origins.
+// CORS middleware
+app.use(cors()); 
 // Example for production:
 // const allowedOrigins = ['http://localhost:3000', 'https://yourfluttersite.com'];
 // app.use(cors({
@@ -40,25 +41,24 @@ app.use(cors()); // For development, you can open it. For production, specify or
 //   }
 // }));
 
-
 // Morgan for logging in development
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
 // Mount routers
-app.get('/', (req, res) => res.send('Optical Shop API Running - Full Setup')); // Basic health check
+app.get('/', (req, res) => res.send('Optical Shop API Running - Full Setup with Analytics')); // Updated health check message
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes); // Ensure this is uncommented and used
-app.use('/api/services', serviceRepairRoutes);   // Ensure this is uncommented and used
-
+app.use('/api/orders', orderRoutes); 
+app.use('/api/services', serviceRepairRoutes);   
+app.use('/api/analytics', analyticsRoutes); // MOUNT THE NEW ROUTES
 
 // Custom error handling middleware
-app.use(notFound); // For 404 errors (routes not found)
-app.use(errorHandler); // For other errors
+app.use(notFound); 
+app.use(errorHandler); 
 
 const PORT = process.env.PORT || 5001;
 

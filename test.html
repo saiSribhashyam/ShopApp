@@ -174,6 +174,34 @@
         </div>
     </div>
 
+    <div class="flex-container">
+        <div class="flex-item endpoint-section" id="analyticsApiSection">
+            <h2>Analytics API</h2>
+            <div>
+                <h3>Get Sales Summary (GET /analytics/sales-summary)</h3>
+                <label for="summaryStartDate">Start Date (Optional, YYYY-MM-DD):</label>
+                <input type="text" id="summaryStartDate" placeholder="YYYY-MM-DD">
+                <label for="summaryEndDate">End Date (Optional, YYYY-MM-DD):</label>
+                <input type="text" id="summaryEndDate" placeholder="YYYY-MM-DD">
+                <button onclick="getSalesSummaryAnalytics()">Get Sales Summary</button>
+                <pre id="salesSummaryAnalyticsResponse"></pre>
+            </div>
+            <hr>
+            <div>
+                <h3>Get Sales Over Time (GET /analytics/sales-over-time)</h3>
+                <label for="sotStartDate">Start Date (Optional, YYYY-MM-DD):</label>
+                <input type="text" id="sotStartDate" placeholder="YYYY-MM-DD">
+                <label for="sotEndDate">End Date (Optional, YYYY-MM-DD):</label>
+                <input type="text" id="sotEndDate" placeholder="YYYY-MM-DD">
+                <label for="sotPeriod">Period (Optional: daily, weekly, monthly - defaults to monthly):</label>
+                <input type="text" id="sotPeriod" placeholder="daily, weekly, or monthly">
+                <button onclick="getSalesOverTimeAnalytics()">Get Sales Over Time</button>
+                <pre id="salesOverTimeAnalyticsResponse"></pre>
+            </div>
+            <p style="margin-top: 15px;"><strong>Note:</strong> For detailed testing of analytics endpoints and various parameters, using a tool like Postman or Insomnia is recommended. This section provides basic invocation capability.</p>
+        </div>
+    </div>
+
     <!-- Placeholder for Prescription and Service/Repair sections -->
     <div class="flex-container">
         <div class="flex-item endpoint-section" id="prescriptionSection">
@@ -498,6 +526,31 @@
             if (!prescriptionId) { alert('Please enter a Prescription ID to delete.'); return; }
             const response = await makeRequest(`/prescriptions/${prescriptionId}`, 'DELETE');
             document.getElementById('deletePrescriptionResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        // --- Analytics API Functions ---
+        async function getSalesSummaryAnalytics() {
+            const startDate = document.getElementById('summaryStartDate').value;
+            const endDate = document.getElementById('summaryEndDate').value;
+            let endpoint = '/analytics/sales-summary?';
+            if (startDate) endpoint += `startDate=${encodeURIComponent(startDate)}&`;
+            if (endDate) endpoint += `endDate=${encodeURIComponent(endDate)}&`;
+            
+            const response = await makeRequest(endpoint.slice(0, -1), 'GET'); // Remove trailing '&' or '?'
+            document.getElementById('salesSummaryAnalyticsResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getSalesOverTimeAnalytics() {
+            const startDate = document.getElementById('sotStartDate').value;
+            const endDate = document.getElementById('sotEndDate').value;
+            const period = document.getElementById('sotPeriod').value;
+            let endpoint = '/analytics/sales-over-time?';
+            if (startDate) endpoint += `startDate=${encodeURIComponent(startDate)}&`;
+            if (endDate) endpoint += `endDate=${encodeURIComponent(endDate)}&`;
+            if (period) endpoint += `period=${encodeURIComponent(period)}&`;
+
+            const response = await makeRequest(endpoint.slice(0, -1), 'GET'); // Remove trailing '&' or '?'
+            document.getElementById('salesOverTimeAnalyticsResponse').textContent = JSON.stringify(response, null, 2);
         }
 
         // --- Global User Search Function ---
