@@ -131,6 +131,13 @@ All routes are prefixed with `/api`. Authentication (`protect`) is applied to mo
     *   Body: (Fields to update, e.g., `actualCost`, `serviceStatus`, `notes`)
 *   **`DELETE /:id`**: Delete a service/repair request. (Protected, OwnerOnly).
 
+### 4.7. Analytics API (`/analytics`)
+
+Provides endpoints for data aggregation and analytics. All routes are protected.
+
+*   **`GET /sales-summary`**: Retrieves sales Key Performance Indicators (KPIs) such as total revenue, average order value, total orders, and total items sold. Supports `startDate` and `endDate` query parameters for filtering.
+*   **`GET /sales-over-time`**: Retrieves sales trend data (revenue and order count) grouped by specified periods (daily, weekly, monthly). Supports `startDate`, `endDate`, and `period` query parameters.
+
 ## 5. Middleware
 
 *   **`authMiddleware.js`**:
