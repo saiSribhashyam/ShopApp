@@ -10,14 +10,14 @@ const { populateUserDetailsForPrescriptions } = require('../utils/populationHelp
 // @access  Private
 const createOrder = async (req, res) => {
     const {
-        userId, 
-        prescriptionId, 
-        orderItems, 
+        userId,
+        prescriptionId,
+        orderItems,
         advancePaid,
         paymentStatus,
         expectedDeliveryTimestamp,
         orderType,
-        orderStatus, 
+        orderStatus,
         notes
     } = req.body;
 
@@ -26,14 +26,14 @@ const createOrder = async (req, res) => {
     }
 
     try {
-        const user = await User.findById(userId); 
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
         if (prescriptionId) {
             const prescription = await Prescription.findById(prescriptionId);
             if (!prescription) return res.status(404).json({ message: "Prescription not found" });
-            
-            if (prescription.userPhno && user.phno !== prescription.userPhno) { 
+
+            if (prescription.userPhno && user.phno !== prescription.userPhno) {
                  console.warn(`Order Warning: The prescription provided (linked to phone ${prescription.userPhno}) does not seem to belong to the user placing the order (phone ${user.phno}).`);
             }
         }
@@ -71,15 +71,15 @@ const createOrder = async (req, res) => {
                 productNameSnapshot: product.productName,
                 productTypeSnapshot: product.productType,
                 quantity: item.quantity,
-                unitPrice: unitPrice, 
+                unitPrice: unitPrice,
                 totalPrice: totalPrice,
             });
             stockUpdates.push({ productId: product._id, quantity: item.quantity });
         }
 
-        const orderData = { /* ... as before ... */ 
+        const orderData = { /* ... as before ... */
             userId, prescriptionId, orderItems: processedOrderItems, billAmount: req.body.billAmount !== undefined ? req.body.billAmount : calculatedBillAmount,
-            advancePaid, paymentStatus, expectedDeliveryTimestamp, orderType, notes, processedBy: req.shopOwner._id 
+            advancePaid, paymentStatus, expectedDeliveryTimestamp, orderType, notes, processedBy: req.shopOwner._id
         };
         if(orderStatus) orderData.orderStatus = orderStatus;
 
@@ -90,7 +90,7 @@ const createOrder = async (req, res) => {
         for (const supdate of stockUpdates) {
             await Product.findByIdAndUpdate(supdate.productId, { $inc: { stockQuantity: -supdate.quantity } });
         }
-        
+
         // Populate before sending response for consistency, including the nested prescription's user details
         const populatedOrder = await Order.findById(createdOrder._id)
             .populate('userId', 'name phno')
@@ -146,7 +146,7 @@ const getOrders = async (req, res) => {
                 if (orders[i].prescriptionId) {
                     // The populateUserDetailsForPrescriptions function expects a Mongoose document or plain object
                     // Since we used .lean(), orders[i].prescriptionId is already a plain object if populated.
-                    // If it wasn't populated (e.g. prescriptionId was null and then removed by lean's option), 
+                    // If it wasn't populated (e.g. prescriptionId was null and then removed by lean's option),
                     // or if it's just an ID, the helper should handle it.
                     // The helper function will check if it's null and return null.
                     orders[i].prescriptionId = await populateUserDetailsForPrescriptions(orders[i].prescriptionId);
@@ -177,7 +177,7 @@ const getOrderById = async (req, res) => {
             .populate('prescriptionId') // Initial populate of prescription
             .populate('processedBy', 'name username')
             .populate('orderItems.productId', 'productName brand modelNumber productType')
-            .lean(); 
+            .lean();
 
         if (order) {
             // If a prescription is linked, populate its userDetails
@@ -227,10 +227,10 @@ const updateOrder = async (req, res) => {
         order.isDelivered = isDelivered !== undefined ? isDelivered : order.isDelivered;
         order.orderStatus = orderStatus || order.orderStatus;
         order.notes = notes !== undefined ? notes : order.notes;
-        order.processedBy = req.shopOwner._id; 
+        order.processedBy = req.shopOwner._id;
 
-        const updatedOrderRaw = await order.save(); 
-        
+        const updatedOrderRaw = await order.save();
+
         // Populate before sending response
         let populatedUpdatedOrder = await Order.findById(updatedOrderRaw._id)
             .populate('userId', 'name phno')

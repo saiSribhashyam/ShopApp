@@ -8,9 +8,9 @@ const { populateUserDetailsForPrescriptions } = require('../utils/populationHelp
 // @access  Private
 const createPrescription = async (req, res) => {
   const {
-    userPhno, 
-    patientName, 
-    patientAgeAtPrescription, 
+    userPhno,
+    patientName,
+    patientAgeAtPrescription,
     nvLeftSph, nvLeftCyl, nvLeftAxis, nvRightSph, nvRightCyl, nvRightAxis,
     dvLeftSph, dvLeftCyl, dvLeftAxis, dvRightSph, dvRightCyl, dvRightAxis,
     pupillaryDistance, addPower, optometristName, prescriptionDate, expiryDate, notes
@@ -53,7 +53,7 @@ const createPrescription = async (req, res) => {
 // @route   GET /api/prescriptions
 // @access  Private
 const getPrescriptions = async (req, res) => {
-  const { userPhno } = req.query; 
+  const { userPhno } = req.query;
   const query = {};
   if (userPhno) {
     query.userPhno = userPhno;
@@ -116,10 +116,10 @@ const updatePrescription = async (req, res) => {
         }
         prescription.userPhno = userPhno;
     }
-    
+
     prescription.patientName = patientName !== undefined ? patientName : prescription.patientName;
     prescription.patientAgeAtPrescription = patientAgeAtPrescription !== undefined ? patientAgeAtPrescription : prescription.patientAgeAtPrescription;
-    
+
     prescription.nvLeftSph = nvLeftSph !== undefined ? nvLeftSph : prescription.nvLeftSph;
     prescription.nvLeftCyl = nvLeftCyl !== undefined ? nvLeftCyl : prescription.nvLeftCyl;
     prescription.nvLeftAxis = nvLeftAxis !== undefined ? nvLeftAxis : prescription.nvLeftAxis;

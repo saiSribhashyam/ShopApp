@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 
 const prescriptionSchema = new mongoose.Schema({
   // userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true, sparse: true }, // REMOVED
-  userPhno: { 
-    type: String, 
-    required: [true, "User phone number is required for linking prescription"], 
-    index: true 
+  userPhno: {
+    type: String,
+    required: [true, "User phone number is required for linking prescription"],
+    index: true
   },
   patientName: { type: String, required: [true, "Patient name is required"], trim: true }, // This is the name snapshot
   patientAgeAtPrescription: { type: Number }, // Age at the time of prescription

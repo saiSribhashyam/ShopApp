@@ -137,6 +137,7 @@ Provides endpoints for data aggregation and analytics. All routes are protected.
 
 *   **`GET /sales-summary`**: Retrieves sales Key Performance Indicators (KPIs) such as total revenue, average order value, total orders, and total items sold. Supports `startDate` and `endDate` query parameters for filtering.
 *   **`GET /sales-over-time`**: Retrieves sales trend data (revenue and order count) grouped by specified periods (daily, weekly, monthly). Supports `startDate`, `endDate`, and `period` query parameters.
+*   **`GET /today-stats`**: Retrieves a collection of key statistics for the current day (e.g., new users, total orders, walk-in interactions, prescriptions, pending orders, completed orders).
 
 ## 5. Middleware
 

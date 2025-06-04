@@ -198,6 +198,12 @@
                 <button onclick="getSalesOverTimeAnalytics()">Get Sales Over Time</button>
                 <pre id="salesOverTimeAnalyticsResponse"></pre>
             </div>
+            <hr>
+            <div>
+                <h3>Get Today's Stats (GET /analytics/today-stats)</h3>
+                <button onclick="getTodayStatsAnalytics()">Get Today's Stats</button>
+                <pre id="todayStatsAnalyticsResponse"></pre>
+            </div>
             <p style="margin-top: 15px;"><strong>Note:</strong> For detailed testing of analytics endpoints and various parameters, using a tool like Postman or Insomnia is recommended. This section provides basic invocation capability.</p>
         </div>
     </div>
@@ -417,7 +423,7 @@
         }
 
         async function getProducts() {
-            let endpoint = '/products?page=1&pageSize=10'; 
+            let endpoint = '/products?page=1&pageSize=10';
             const keyword = document.getElementById('getProductsKeyword').value;
             const type = document.getElementById('getProductsType').value;
             if (keyword) endpoint += `&keyword=${encodeURIComponent(keyword)}`;
@@ -436,7 +442,7 @@
             const orderType = document.getElementById('orderType').value;
 
             // Corrected alert condition
-            if (!userId || !productId || !quantity || orderType === '' || unitPrice === undefined || unitPrice < 0) { 
+            if (!userId || !productId || !quantity || orderType === '' || unitPrice === undefined || unitPrice < 0) {
                 alert('User ID, Product ID, Quantity, Unit Price (non-negative), and Order Type are required for this simplified test.');
                 return;
             }
@@ -496,9 +502,9 @@
             const patientAgeAtPrescription = document.getElementById('updatePrescPatientAge').value;
             const notes = document.getElementById('updatePrescNotes').value;
 
-            if (!prescriptionId) { 
-                alert('Please enter a Prescription ID to update.'); 
-                return; 
+            if (!prescriptionId) {
+                alert('Please enter a Prescription ID to update.');
+                return;
             }
 
             const body = {};
@@ -535,7 +541,7 @@
             let endpoint = '/analytics/sales-summary?';
             if (startDate) endpoint += `startDate=${encodeURIComponent(startDate)}&`;
             if (endDate) endpoint += `endDate=${encodeURIComponent(endDate)}&`;
-            
+
             const response = await makeRequest(endpoint.slice(0, -1), 'GET'); // Remove trailing '&' or '?'
             document.getElementById('salesSummaryAnalyticsResponse').textContent = JSON.stringify(response, null, 2);
         }
@@ -551,6 +557,11 @@
 
             const response = await makeRequest(endpoint.slice(0, -1), 'GET'); // Remove trailing '&' or '?'
             document.getElementById('salesOverTimeAnalyticsResponse').textContent = JSON.stringify(response, null, 2);
+        }
+
+        async function getTodayStatsAnalytics() {
+            const response = await makeRequest('/analytics/today-stats', 'GET');
+            document.getElementById('todayStatsAnalyticsResponse').textContent = JSON.stringify(response, null, 2);
         }
 
         // --- Global User Search Function ---
