@@ -594,6 +594,26 @@ This section details endpoints for retrieving analytics data. All routes are pro
         ```
         *(Note: For `period=daily`, 'period' will be like "2023-01-15". For `period=weekly`, 'period' will be like "2023-W03".)*
 
+*   **Get Today's Key Statistics**
+    *   **Method**: `GET`
+    *   **Path**: `/analytics/today-stats`
+    *   **Protected**: Yes
+    *   **Description**: Retrieves a collection of key statistics for the current day.
+    *   **Query Parameters**: None.
+    *   **Success Response (200)**:
+        ```json
+        {
+          "date": "YYYY-MM-DD", // The current date
+          "newUsersToday": 5,
+          "newWalkInUsersToday": 2,
+          "totalOrdersToday": 10,
+          "ordersFromWalkInCustomersToday": 3,
+          "prescriptionsToday": 7,
+          "pendingOrdersToday": 4,
+          "completedOrDeliveredOrdersToday": 6
+        }
+        ```
+
 
 ## 8. Error Handling
 

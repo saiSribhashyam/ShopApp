@@ -29,7 +29,7 @@ const createProduct = async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message, errors: error.errors });
     }
-    if (error.code === 11000) { 
+    if (error.code === 11000) {
         return res.status(400).json({ message: 'Product with these details (e.g., name, brand, model) already exists.', error: error.keyValue });
     }
     res.status(500).json({ message: 'Server Error creating product', error: error.message });
@@ -42,7 +42,7 @@ const createProduct = async (req, res) => {
 const getProducts = async (req, res) => {
   const pageSize = parseInt(req.query.pageSize) || 10;
   const page = parseInt(req.query.page) || 1;
-  
+
   const keyword = req.query.keyword ? {
     $or: [
       { productName: { $regex: req.query.keyword, $options: 'i' } },
@@ -127,7 +127,7 @@ const updateProduct = async (req, res) => {
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message, errors: error.errors });
     }
-    if (error.code === 11000) { 
+    if (error.code === 11000) {
         return res.status(400).json({ message: 'Update failed: Product with these details (e.g., name, brand, model) already exists.', error: error.keyValue });
     }
     if (error.kind === 'ObjectId') {
@@ -162,7 +162,7 @@ const deleteProduct = async (req, res) => {
 // @route   PUT /api/products/:id/stock
 // @access  Private
 const updateStock = async (req, res) => {
-    const { quantityChange, type } = req.body; 
+    const { quantityChange, type } = req.body;
 
     if (quantityChange === undefined || type === undefined) {
         return res.status(400).json({ message: "Quantity change and type ('absolute' or 'relative') are required." });

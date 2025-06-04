@@ -48,7 +48,7 @@ const getUsers = async (req, res) => {
     const users = await User.find({ ...searchQuery })
       .limit(pageSize)
       .skip(pageSize * (page - 1))
-      .sort({ createdAt: -1 }); 
+      .sort({ createdAt: -1 });
 
     res.json({
       users,
@@ -93,7 +93,7 @@ const updateUser = async (req, res) => {
     if (user) {
       user.name = name || user.name;
       user.phno = phno || user.phno;
-      user.age = age === undefined ? user.age : age; 
+      user.age = age === undefined ? user.age : age;
       user.gender = gender || user.gender;
       user.street = street || user.street;
       user.city = city || user.city;
@@ -132,7 +132,7 @@ const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (user) {
-      await user.deleteOne(); 
+      await user.deleteOne();
       res.json({ message: 'Customer removed' });
     } else {
       res.status(404).json({ message: 'Customer not found' });
@@ -161,7 +161,7 @@ const getUserDetailsByPhoneNumber = async (req, res) => {
         // Fetch prescriptions linked by userPhno
         const prescriptionsRaw = await Prescription.find({ userPhno: phno }).sort({ prescriptionDate: -1 }).lean();
         // Even though we have userDetails, populating here ensures consistency if prescriptions are used standalone
-        const prescriptions = await populateUserDetailsForPrescriptions(prescriptionsRaw); 
+        const prescriptions = await populateUserDetailsForPrescriptions(prescriptionsRaw);
 
         // Fetch orders linked by userId (User's ObjectId)
         const orders = await Order.find({ userId: userDetails._id })
@@ -170,7 +170,7 @@ const getUserDetailsByPhoneNumber = async (req, res) => {
             .populate('processedBy', 'name')
             .sort({ orderDate: -1 })
             .lean();
-        
+
         // Fetch service/repairs linked by userId
         const serviceRepairs = await ServiceRepair.find({ userId: userDetails._id })
             .populate('processedBy', 'name')
